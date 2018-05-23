@@ -1,6 +1,7 @@
 <template>
   <div class="singers">
-    <listview :data="singers" ref="list"></listview>
+    <listview :data="singers" @select="selectSinger" ref="list"></listview>
+    <router-view></router-view>
   </div>
 </template>
 
@@ -8,6 +9,7 @@
 import { getSingerList } from '../../api/singers';
 import { ERR_OK } from '../../api/config';
 import Listview from '../../components/listview';
+import { mapMutations } from 'vuex';
 
 export default {
   components: {
@@ -19,12 +21,21 @@ export default {
     };
   },
   methods: {
+    ...mapMutations({
+      setSinger: 'SET_SINGER'
+    }),
     getSingerList() {
       getSingerList().then((res) => {
         if (res.code === ERR_OK) {
           this.singers = this.normalizeSingers(res.data.list);
         }
       });
+    },
+    selectSinger(singer) {
+      this.$router.push({
+        path: `/singers/${singer.id}`
+      });
+      this.setSinger(singer);
     },
     normalizeSingers(singers) {
       const HOT_NAME = '热门';

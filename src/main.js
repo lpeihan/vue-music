@@ -1,6 +1,7 @@
 import Vue from 'vue';
 import App from './app';
 import router from './route';
+import store from './store';
 
 import lazyload from 'vue-lazyload';
 
@@ -17,6 +18,7 @@ Vue.config.productionTip = false;
 new Vue({
   el: '#app',
   router,
+  store,
   components: { App },
   template: '<App/>'
 });
