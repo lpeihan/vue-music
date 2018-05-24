@@ -21,7 +21,7 @@
       :listen-scroll="true"
       @scroll="scroll"
     >
-      <song-list :songs="songs"></song-list>
+      <song-list :songs="songs" @select="selectSong"></song-list>
       <div class="loading-container" v-show="!songs.length">
         <loading></loading>
       </div>
@@ -33,6 +33,7 @@
 import SongList from '../../components/song-list';
 import Scroll from '../../components/scroll';
 import loading from '../../components/loading';
+import { mapActions } from 'vuex';
 
 export default {
   components: {
@@ -52,6 +53,9 @@ export default {
     }
   },
   methods: {
+    ...mapActions([
+      'selectPlay'
+    ]),
     back() {
       this.$router.back();
     },
@@ -86,6 +90,12 @@ export default {
       image.style['transform'] = `scale(${scale})`;
 
       this.$refs.overlay.style['transform'] = `translate3d(0, ${translateY}px, 0)`;
+    },
+    selectSong(song, index) {
+      this.selectPlay({
+        list: this.songs,
+        index
+      });
     }
   },
   mounted() {
