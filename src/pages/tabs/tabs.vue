@@ -15,7 +15,7 @@
   </div>
 </template>
 
-<style lang="stylus">
+<style lang="stylus" scoped>
   @import "../../styles/variables"
 
   $height = 50px

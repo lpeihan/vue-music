@@ -10,6 +10,11 @@ size()
     width: arguments[0]
     height: arguments[1]
 
+no-wrap()
+  text-overflow: ellipsis
+  overflow: hidden
+  white-space: nowrap
+
 -pos(type, args)
   i = 0
   position: unquote(type)

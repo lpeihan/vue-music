@@ -9,7 +9,7 @@ import './styles/index.styl';
 import './utils/axios';
 
 Vue.use(lazyload, {
-  loading: require('./assets/logo.png')
+  loading: require('./assets/image/logo.png')
 });
 
 Vue.config.productionTip = false;

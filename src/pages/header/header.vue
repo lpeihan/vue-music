@@ -5,7 +5,7 @@
   </div>
 </template>
 
-<style lang="stylus">
+<style lang="stylus" scoped>
   @import "../../styles/variables"
   @import "../../styles/mixins"
 
