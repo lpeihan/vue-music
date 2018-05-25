@@ -15,7 +15,7 @@
 
 <script>
 import BScroll from 'better-scroll';
-import { addClass } from '../utils';
+import { addClass } from '../utils/dom';
 
 export default {
   props: {

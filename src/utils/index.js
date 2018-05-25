@@ -1,18 +1,3 @@
-export function hasClass(el, className) {
-  const reg = new RegExp('(^|\\s)' + className + '(\\s|$)');
-  return reg.test(el.className);
-}
-
-export function addClass(el, className) {
-  if (hasClass(el, className)) {
-    return;
-  }
-
-  let newClass = el.className.split(' ');
-  newClass.push(className);
-  el.className = newClass.join(' ');
-}
-
 export function leftpad(num, n = 2) {
   let len = num.toString().length;
   while (len < n) {
@@ -20,4 +5,19 @@ export function leftpad(num, n = 2) {
     len++;
   }
   return num;
+}
+
+function getRandom(min, max) {
+  return Math.round(Math.random() * (max - min) + min);
+}
+
+export function shuffle(arr) {
+  let tmp = arr.slice();
+  for (let i = 0; i < tmp.length; i++) {
+    let j = getRandom(0, i);
+    let t = tmp[i];
+    tmp[i] = tmp[j];
+    tmp[j] = t;
+  }
+  return tmp;
 }

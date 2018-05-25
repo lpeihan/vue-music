@@ -46,28 +46,25 @@ export default {
       const deltaX = this.getPageX(e) - this.startX;
       let offsetX = this.width + deltaX;
       offsetX = offsetX < 0 ? 0 : offsetX;
-      offsetX = Math.min(offsetX, this.progressWidth);
+      offsetX = Math.min(offsetX, this.$el.clientWidth);
       this.offsetX = offsetX;
     },
     handleTouchend() {
       this.touching = false;
-      this.$emit('update', (this.offsetX) / this.progressWidth);
+      this.$emit('update', (this.offsetX) / this.$el.clientWidth);
     },
     clickProress(e) {
-      this.$emit('update', (e.offsetX) / this.progressWidth);
+      this.$emit('update', (e.offsetX) / this.$el.clientWidth);
     }
   },
   watch: {
     percent() {
       if (!this.touching) {
-        const barWidth = this.progressWidth;
+        const barWidth = this.$el.clientWidth;
         this.width = this.percent * barWidth;
         this.offsetX = this.width;
       }
     }
-  },
-  mounted() {
-    this.progressWidth = this.$el.clientWidth;
   }
 };
 </script>
@@ -88,7 +85,7 @@ export default {
         position: absolute
         background: $color-theme
       .btn-wrapper
-        absolute: top -13px left -8px
+        absolute: top -13px left -15px
         box-sizing: border-box
         size: 30px
         padding: 7px

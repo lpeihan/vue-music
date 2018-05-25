@@ -40,8 +40,8 @@
             </div>
           </div>
           <div class="operators">
-            <div>
-              <i class="icon-random"></i>
+            <div @click="changeMode">
+              <i :class="modeClass"></i>
             </div>
             <div @click="prevSong" :class="playDisabled">
               <i class="icon-prev"></i>
@@ -82,15 +82,17 @@
       :src="url"
       @play="ready"
       @timeupdate="updateTime"
-      @error="error">
+      @error="error"
+      @ended="end">
     </audio>
   </div>
 </template>
 <script>
 import { mapGetters, mapMutations } from 'vuex';
 import animations from 'create-keyframe-animation';
-import { leftpad } from '../../utils';
+import { leftpad, shuffle } from '../../utils';
 import ProgressBar from '../../components/progress-bar';
+import { playMode } from '../../services/config';
 
 export default {
   components: {
@@ -109,7 +111,9 @@ export default {
       'fullScreen',
       'playlist',
       'playing',
-      'currentIndex'
+      'currentIndex',
+      'mode',
+      'sequenceList'
     ]),
     imageClass() {
       return this.playing ? 'play' : 'play pause';
@@ -121,7 +125,15 @@ export default {
       return this.songReady ? '' : 'disabled';
     },
     percent() {
-      return this.currentTime / this.currentSong.duration;
+      // 为了解决 percent 在切换歌曲的瞬间大于 0 的 bug
+      // 在切换歌曲的瞬间，currentTime 还是上一首，但duration已经变成下一首
+      const percent = this.currentTime / this.currentSong.duration;
+      return Math.min(1, percent);
+    },
+    modeClass() {
+      const mode = this.mode;
+      return mode === playMode.sequence ? 'icon-sequence' : mode === playMode.loop
+        ? 'icon-loop' : 'icon-random';
     }
   },
   filters: {
@@ -136,7 +148,9 @@ export default {
     ...mapMutations({
       setFullScreen: 'SET_FULL_SCREEN',
       setPlaying: 'SET_PLAYING',
-      setCurrentIndex: 'SET_CURRENT_INDEX'
+      setCurrentIndex: 'SET_CURRENT_INDEX',
+      setPlayMode: 'SET_PLAY_MODE',
+      setPlaylist: 'SET_PLAYLIST'
     }),
     back() {
       this.setFullScreen(false);
@@ -179,6 +193,17 @@ export default {
     ready() {
       this.songReady = true;
     },
+    end() {
+      if (this.mode === playMode.loop) {
+        this.loop();
+      } else {
+        this.nextSong();
+      }
+    },
+    loop() {
+      this.$refs.audio.currentTime = 0;
+      this.$refs.audio.play();
+    },
     error() {
       this.songReady = true;
     },
@@ -190,6 +215,26 @@ export default {
       if (!this.playing) {
         this.togglePlaying();
       }
+    },
+    changeMode() {
+      const mode = (this.mode + 1) % 3;
+      this.setPlayMode(mode);
+      let list = null;
+
+      if (mode === playMode.random) {
+        list = shuffle(this.sequenceList);
+      } else {
+        list = this.sequenceList;
+      }
+      this.resetCurrentIndex(list);
+      this.setPlaylist(list);
+    },
+    resetCurrentIndex(list) {
+      let index = list.findIndex(item => {
+        return item.id === this.currentSong.id;
+      });
+
+      this.setCurrentIndex(index);
     },
     enter(el, done) {
       const { x, y, scale } = this.getPosAndScale();
@@ -247,7 +292,10 @@ export default {
     }
   },
   watch: {
-    currentSong() {
+    currentSong(newSong, oldSong) {
+      if (newSong.id === oldSong.id) {
+        return;
+      }
       this.$nextTick(() => {
         this.$refs.audio.play();
       });
@@ -336,7 +384,7 @@ export default {
           align-items: center
           .progress-bar-container
             flex: 1
-            margin: 0 8px
+            margin: 0 10px
           .current-time
           .duration
             font-size: $font-size-small + 1
