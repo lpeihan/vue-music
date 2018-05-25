@@ -19,6 +19,7 @@ module.exports = {
     'semi': ['error', 'always'],
     'generator-star-spacing': 'off',
     'space-before-function-paren': 'off',
+    'prefer-promise-reject-errors': 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
   }
 }

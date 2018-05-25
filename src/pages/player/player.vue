@@ -18,13 +18,38 @@
           </div>
         </div>
 
-        <div class="middle">
-          <div
-            class="image"
-            ref="image"
-            :style="{ backgroundImage: `url(${currentSong.image})` }"
-            :class="imageClass">
+        <div
+          class="middle"
+          @touchstart="handleTouchstart"
+          @touchmove="handleTouchmove"
+          @touchend="handleTouchend"
+        >
+          <div class="cd">
+            <div
+              class="image"
+              ref="image"
+              :style="{ backgroundImage: `url(${currentSong.image})` }"
+              :class="imageClass">
+            </div>
           </div>
+
+          <scroll
+            class="lyric"
+            v-if="currentLyric.lines"
+            :data="currentLyric.lines"
+            :class="{ 'touching': !touching }"
+            :style="{ transform: `translateX(${translateX}px)`}"
+          >
+            <div>
+              <p
+                class="line"
+                v-for="(line, index) in currentLyric.lines"
+                :key="index"
+              >
+                {{line.txt}}
+              </p>
+            </div>
+          </scroll>
         </div>
 
         <div class="bottom">
@@ -93,15 +118,26 @@ import animations from 'create-keyframe-animation';
 import { leftpad, shuffle } from '../../utils';
 import ProgressBar from '../../components/progress-bar';
 import { playMode } from '../../services/config';
+import Lyric from 'lyric-parser';
+import Scroll from '../../components/scroll';
 
 export default {
   components: {
-    ProgressBar
+    ProgressBar,
+    Scroll
   },
   data() {
     return {
       songReady: false,
       currentTime: 0,
+      currentLyric: {},
+      startX: 0,
+      startY: 0,
+      touching: false,
+      translateX: 0,
+      lyricShow: false,
+      startTranslateX: 0,
+      deltaX: 0,
       url: 'http://dl.stream.qqmusic.qq.com/C400001J5QJL1pRQYB.m4a?vkey=BC9EA4501EB70B280E802A8264BF2CD8E287C0EB1F28BDAD33EF98CB9335E682E0F128396645C697D393699F061583F4A1893E93B6AD5874&guid=3446878830&uin=291630202&fromtag=66'
     };
   },
@@ -236,6 +272,54 @@ export default {
 
       this.setCurrentIndex(index);
     },
+    getLyric() {
+      this.currentSong.getLyric().then((lyric) => {
+        this.currentLyric = new Lyric(lyric, this.handleLyric);
+      });
+    },
+    handleLyric() {},
+    handleTouchstart(e) {
+      this.touching = true;
+      this.startX = e.touches[0].pageX;
+      this.startY = e.touches[0].pageY;
+      this.deltaX = 0;
+      this.startTranslateX = this.translateX;
+    },
+    handleTouchmove(e) {
+      const deltaX = e.touches[0].pageX - this.startX;
+      const deltaY = e.touches[0].pageY - this.startY;
+
+      if ((this.lyricShow && deltaX < 0) || (!this.lyricShow && deltaX > 0)) {
+        return;
+      }
+
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        const translateX = Math.max(deltaX + this.startTranslateX, -window.innerWidth);
+        this.translateX = translateX;
+      }
+
+      this.deltaX = deltaX;
+    },
+    handleTouchend(e) {
+      this.touching = false;
+      const percent = Math.abs(this.deltaX) / window.innerWidth;
+
+      if (!this.lyricShow) {
+        if (percent > 0.1) {
+          this.translateX = -window.innerWidth;
+          this.lyricShow = true;
+        } else {
+          this.translateX = 0;
+        }
+      } else {
+        if (percent > 0.1) {
+          this.translateX = 0;
+          this.lyricShow = false;
+        } else {
+          this.translateX = -window.innerWidth;
+        }
+      }
+    },
     enter(el, done) {
       const { x, y, scale } = this.getPosAndScale();
 
@@ -298,6 +382,7 @@ export default {
       }
       this.$nextTick(() => {
         this.$refs.audio.play();
+        this.getLyric();
       });
     },
     playing(playing) {
@@ -364,17 +449,32 @@ export default {
 
       .middle
         absolute: top 90px left 0 right 0 bottom 170px
-        padding: 0 12%
-        .image
-          height: 0
-          padding-bottom: 100%
-          border-radius: 50%
-          background-size: 100% 100%
-          &.play
-            animation: rotate 20s linear infinite
-          &.pause
-            animation-play-state: paused
-
+        overflow: hidden
+        white-space: nowrap
+        .cd
+          size: 100%
+          padding: 0 12%
+          display: inline-block
+          box-sizing: border-box
+          .image
+            height: 0
+            padding-bottom: 100%
+            border-radius: 50%
+            background-size: 100% 100%
+            &.play
+              animation: rotate 20s linear infinite
+            &.pause
+              animation-play-state: paused
+        .lyric
+          size: 100%
+          display: inline-block
+          text-align: center
+          overflow: hidden
+          &.touching
+            transition: all .4s
+          .line
+            color: rgba(255,255,255,0.5)
+            line-height: 36px
       .bottom
         absolute: bottom 50px left 0 right 0
         padding: 0 10%

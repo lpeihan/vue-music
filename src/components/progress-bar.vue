@@ -7,6 +7,7 @@
       </div>
       <div
         class="btn-wrapper"
+        @click.stop
         :style="{ transform: `translateX(${offsetX}px)` }"
         @touchstart="handleTouchstart"
         @touchmove="handleTouchmove"
