@@ -7,10 +7,10 @@ const open = require('open');
 
 const config = {
   port: 8300,
-  host: 'localhost'
+  host: '192.168.31.170'
 };
 
-const url = `http://localhost:${config.port}`;
+const url = `http://${config.host}:${config.port}`;
 
 WebpackDevServerConf.entry.app.unshift(
   `webpack-dev-server/client?${url}`,

@@ -28,17 +28,28 @@
         </div>
 
         <div class="bottom">
+          <div class="progress-container">
+            <div class="current-time">
+              {{currentTime | time}}
+            </div>
+            <div class="progress-bar-container">
+              <progress-bar :percent="percent" @update="updateProgress"></progress-bar>
+            </div>
+            <div class="duration">
+              {{currentSong.duration | time}}
+            </div>
+          </div>
           <div class="operators">
             <div>
               <i class="icon-random"></i>
             </div>
-            <div>
+            <div @click="prevSong" :class="playDisabled">
               <i class="icon-prev"></i>
             </div>
-            <div class="icon-play-wrapper" @click="togglePlaying">
-              <i :class="{ 'icon-pause': playing, 'icon-play': !playing }"></i>
+            <div class="icon-play-wrapper" @click="togglePlaying" :class="playDisabled">
+              <i :class="playClass"></i>
             </div>
-            <div>
+            <div @click="nextSong" :class="playDisabled">
               <i class="icon-next"></i>
             </div>
             <div>
@@ -53,20 +64,42 @@
       <div
         ref="miniImage"
         class="mini-image"
+        :class="imageClass"
         :style="{ backgroundImage: `url(${currentSong.image})` }">
+      </div>
+      <div class="text">
+        <h2 class="name">{{currentSong.name}}</h2>
+        <p class="singer">{{currentSong.singer}}</p>
+      </div>
+      <div class="right-btns">
+        <i @click.stop="togglePlaying" :class="playClass"></i>
+        <i class="icon-playlist"></i>
       </div>
     </div>
 
-    <audio ref="audio" :src="url"></audio>
+    <audio
+      ref="audio"
+      :src="url"
+      @play="ready"
+      @timeupdate="updateTime"
+      @error="error">
+    </audio>
   </div>
 </template>
 <script>
 import { mapGetters, mapMutations } from 'vuex';
 import animations from 'create-keyframe-animation';
+import { leftpad } from '../../utils';
+import ProgressBar from '../../components/progress-bar';
 
 export default {
+  components: {
+    ProgressBar
+  },
   data() {
     return {
+      songReady: false,
+      currentTime: 0,
       url: 'http://dl.stream.qqmusic.qq.com/C400001J5QJL1pRQYB.m4a?vkey=BC9EA4501EB70B280E802A8264BF2CD8E287C0EB1F28BDAD33EF98CB9335E682E0F128396645C697D393699F061583F4A1893E93B6AD5874&guid=3446878830&uin=291630202&fromtag=66'
     };
   },
@@ -75,16 +108,35 @@ export default {
       'currentSong',
       'fullScreen',
       'playlist',
-      'playing'
+      'playing',
+      'currentIndex'
     ]),
     imageClass() {
       return this.playing ? 'play' : 'play pause';
+    },
+    playClass() {
+      return this.playing ? 'icon-pause' : 'icon-play';
+    },
+    playDisabled() {
+      return this.songReady ? '' : 'disabled';
+    },
+    percent() {
+      return this.currentTime / this.currentSong.duration;
+    }
+  },
+  filters: {
+    time(time) {
+      time = time | 0;
+      const minute = time / 60 | 0;
+      const second = leftpad(time % 60);
+      return `${minute}:${second}`;
     }
   },
   methods: {
     ...mapMutations({
       setFullScreen: 'SET_FULL_SCREEN',
-      setPlaying: 'SET_PLAYING'
+      setPlaying: 'SET_PLAYING',
+      setCurrentIndex: 'SET_CURRENT_INDEX'
     }),
     back() {
       this.setFullScreen(false);
@@ -93,7 +145,51 @@ export default {
       this.setFullScreen(true);
     },
     togglePlaying() {
+      if (!this.songReady) {
+        return;
+      }
       this.setPlaying(!this.playing);
+    },
+    prevSong() {
+      if (!this.songReady) {
+        return;
+      }
+
+      let index = this.currentIndex - 1;
+      if (index === -1) {
+        index = this.playlist - 1;
+      }
+      this.setCurrentIndex(index);
+
+      !this.playing && this.togglePlaying();
+      this.songReady = false;
+    },
+    nextSong() {
+      if (!this.songReady) {
+        return;
+      }
+      let index = this.currentIndex + 1;
+      if (index === this.playlist.length) {
+        index = 0;
+      }
+      this.setCurrentIndex(index);
+      !this.playing && this.togglePlaying();
+      this.songReady = false;
+    },
+    ready() {
+      this.songReady = true;
+    },
+    error() {
+      this.songReady = true;
+    },
+    updateTime(e) {
+      this.currentTime = e.target.currentTime;
+    },
+    updateProgress(percent) {
+      this.$refs.audio.currentTime = percent * this.currentSong.duration;
+      if (!this.playing) {
+        this.togglePlaying();
+      }
     },
     enter(el, done) {
       const { x, y, scale } = this.getPosAndScale();
@@ -233,14 +329,27 @@ export default {
 
       .bottom
         absolute: bottom 50px left 0 right 0
+        padding: 0 10%
+        .progress-container
+          height: 50px
+          display: flex
+          align-items: center
+          .progress-bar-container
+            flex: 1
+            margin: 0 8px
+          .current-time
+          .duration
+            font-size: $font-size-small + 1
+            color: $color-text-ll
         .operators
           font-size: 32px
           color: $color-theme
           align-items: center
           height: 40px
           display: flex
-          justify-content: space-around
-          padding: 0 6%
+          justify-content: space-between
+          .disabled
+            color: $color-theme-d
           .icon-play-wrapper
             font-size: 40px
 
@@ -256,7 +365,26 @@ export default {
         size: 40px
         background-size: 100% 100%
         border-radius: 50%
-
+        &.play
+          animation: rotate 20s linear infinite
+        &.pause
+          animation-play-state: paused
+      .text
+        width: calc(100% - 80px - 40px)
+        margin-left: 10px
+        .name
+          margin-bottom: 8px
+          font-size: $font-size-medium
+          no-wrap()
+        .singer
+          font-size: $font-size-small
+          color: $color-text-d
+      .right-btns
+        width: 80px
+        display: flex
+        justify-content: space-between
+        font-size: 30px
+        color: $color-theme-d
   @keyframes rotate
     0%
       transform: rotate(0)

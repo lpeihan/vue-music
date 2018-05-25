@@ -12,3 +12,12 @@ export function addClass(el, className) {
   newClass.push(className);
   el.className = newClass.join(' ');
 }
+
+export function leftpad(num, n = 2) {
+  let len = num.toString().length;
+  while (len < n) {
+    num = '0' + num;
+    len++;
+  }
+  return num;
+}
