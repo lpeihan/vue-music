@@ -1,7 +1,9 @@
 <template>
-  <div class="disc">
-    <music-list :title="disc.dissname" :image="disc.imgurl"></music-list>
-  </div>
+  <transition name="slide">
+    <div class="disc">
+      <music-list :title="disc.dissname" :image="disc.imgurl"></music-list>
+    </div>
+  </transition>
 </template>
 
 <script>
@@ -43,4 +45,11 @@ export default {
   @import "../../styles/mixins"
   .disc
     fixed: top 0 left 0 right 0 bottom 0
+    &.slide
+      &-enter-active
+      &-leave-active
+        transition: all 0.4s
+      &-enter
+      &-leave-to
+        transform: translateX(100%)
 </style>

@@ -17,7 +17,9 @@ const getters = {
     return state.playlist[state.currentIndex] || {};
   },
 
-  disc: state => state.disc
+  disc: state => state.disc,
+
+  topList: state => state.topList
 };
 
 export default getters;

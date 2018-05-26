@@ -15,7 +15,9 @@ const state = {
 
   currentIndex: -1,
 
-  disc: {}
+  disc: {},
+
+  topList: {}
 };
 
 export default state;
