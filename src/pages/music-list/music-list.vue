@@ -7,7 +7,7 @@
       <h1 class="title">{{title}}</h1>
     </div>
     <div class="bg-image" :style="{ backgroundImage: `url(${image})` }" ref="image">
-      <div class="play" ref="play">
+      <div class="play" ref="play" v-show="songs.length">
         <i class="icon-play"></i>
         <span class="text">随机播放全部</span>
       </div>
@@ -53,7 +53,8 @@ export default {
       type: String
     },
     songs: {
-      type: Array
+      type: Array,
+      default: () => []
     }
   },
   methods: {

@@ -20,7 +20,12 @@
 
         <div class="disc-list">
           <h1 class="title">热门歌单推荐</h1>
-          <div class="disc-item" v-for="(disc, index) in discList" :key="index">
+          <div
+            class="disc-item"
+            v-for="(disc, index) in discList"
+            :key="index"
+            @click="selectDisc(disc)"
+          >
             <div class="img">
               <img v-lazy="disc.imgurl" alt="img" width="60" height="60">
             </div>
@@ -35,6 +40,7 @@
         <loading></loading>
       </div>
     </scroll>
+    <router-view></router-view>
   </div>
 </template>
 
@@ -45,6 +51,7 @@ import { Swiper, Slide } from 'vue-swiper-component';
 import Scroll from '../../components/scroll';
 import Loading from '../../components/loading';
 import { playlistMixin } from '../../utils/mixins';
+import { mapMutations } from 'vuex';
 
 export default {
   mixins: [
@@ -64,6 +71,9 @@ export default {
     Loading
   },
   methods: {
+    ...mapMutations({
+      setDisc: 'SET_DISC'
+    }),
     handlePlaylist(playlist) {
       const bottom = playlist.length > 0 ? '60px' : '';
       this.$el.style.bottom = bottom;
@@ -76,6 +86,10 @@ export default {
           this.songList = res.data.slider;
         }
       });
+    },
+    selectDisc(disc) {
+      this.$router.push(`/recommends/${disc.dissid}`);
+      this.setDisc(disc);
     },
     getDiscList() {
       getDiscList().then((res) => {
