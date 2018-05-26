@@ -6,6 +6,7 @@ import SingerDetail from './pages/singers/singer-detail';
 import Disc from './pages/disc/disc';
 import Rank from './pages/rank/rank';
 import TopList from './pages/rank/top-list';
+import Search from './pages/search/search';
 
 Vue.use(Router);
 
@@ -50,6 +51,11 @@ export default new Router({
           component: TopList
         }
       ]
+    },
+    {
+      path: '/search',
+      name: 'search',
+      component: Search
     }
   ]
 });
