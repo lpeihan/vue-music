@@ -20,6 +20,7 @@ module.exports = {
     'generator-star-spacing': 'off',
     'space-before-function-paren': 'off',
     'prefer-promise-reject-errors': 'off',
+    'eol-last': 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
   }
 }

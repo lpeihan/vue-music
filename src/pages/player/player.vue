@@ -31,11 +31,15 @@
               :style="{ backgroundImage: `url(${currentSong.image})` }"
               :class="imageClass">
             </div>
+            <div class="playing-lyric">
+              {{playingLyric}}
+            </div>
           </div>
 
           <scroll
+            ref="lyricList"
             class="lyric"
-            v-if="currentLyric.lines"
+            v-if="currentLyric"
             :data="currentLyric.lines"
             :class="{ 'touching': !touching }"
             :style="{ transform: `translateX(${translateX}px)`}"
@@ -43,6 +47,8 @@
             <div>
               <p
                 class="line"
+                ref="lyricLine"
+                :class="{ 'active': index === currentLine }"
                 v-for="(line, index) in currentLyric.lines"
                 :key="index"
               >
@@ -130,7 +136,7 @@ export default {
     return {
       songReady: false,
       currentTime: 0,
-      currentLyric: {},
+      currentLyric: null,
       startX: 0,
       startY: 0,
       touching: false,
@@ -138,6 +144,8 @@ export default {
       lyricShow: false,
       deltaX: 0,
       opacity: 1,
+      currentLine: 0,
+      playingLyric: '',
       url: 'http://dl.stream.qqmusic.qq.com/C400003aAYrm3GE0Ac.m4a?vkey=C35503A866F9BBADBDC9DD1EC3947CBF49C80A28F7E28FA45A773204775062940BE908462B3B0DA1F66EB9E0A1217EAFACB0A13F72C99883&guid=3446878830&uin=291630202&fromtag=66'
     };
   },
@@ -194,6 +202,10 @@ export default {
         return;
       }
       this.setPlaying(!this.playing);
+
+      if (this.currentLyric) {
+        this.currentLyric.togglePlay();
+      }
     },
     prevSong() {
       if (!this.songReady) {
@@ -234,6 +246,10 @@ export default {
     loop() {
       this.$refs.audio.currentTime = 0;
       this.$refs.audio.play();
+
+      if (this.currentLyric) {
+        this.currentLyric.seek(0);
+      }
     },
     error() {
       this.songReady = true;
@@ -245,6 +261,10 @@ export default {
       this.$refs.audio.currentTime = percent * this.currentSong.duration;
       if (!this.playing) {
         this.togglePlaying();
+      }
+
+      if (this.currentLyric) {
+        this.currentLyric.seek(this.$refs.audio.currentTime * 1000);
       }
     },
     changeMode() {
@@ -270,9 +290,28 @@ export default {
     getLyric() {
       this.currentSong.getLyric().then((lyric) => {
         this.currentLyric = new Lyric(lyric, this.handleLyric);
+
+        if (this.playing) {
+          this.currentLyric.play();
+        }
+      }).catch(() => {
+        this.currentLyric = null;
+        this.currentLine = 0;
+        this.playingLyric = '';
       });
     },
-    handleLyric() {},
+    handleLyric({ lineNum, txt }) {
+      this.currentLine = lineNum;
+
+      if (lineNum > 5) {
+        let lineEl = this.$refs.lyricLine[lineNum - 5];
+        this.$refs.lyricList.scrollToElement(lineEl, 1000);
+      } else {
+        this.$refs.lyricList.scrollTo(0, 0, 1000);
+      }
+
+      this.playingLyric = txt;
+    },
     handleTouchstart(e) {
       this.touching = true;
       this.deltaX = 0;
@@ -329,7 +368,6 @@ export default {
     },
     enter(el, done) {
       const { x, y, scale } = this.getPosAndScale();
-      console.log(x, y);
 
       const animation = {
         0: {
@@ -388,10 +426,14 @@ export default {
       if (newSong.id === oldSong.id) {
         return;
       }
-      this.$nextTick(() => {
+
+      if (this.currentLyric) {
+        this.currentLyric.stop();
+      }
+      setTimeout(() => {
         this.$refs.audio.play();
         this.getLyric();
-      });
+      }, 1000);
     },
     playing(playing) {
       const audio = this.$refs.audio;
@@ -475,6 +517,9 @@ export default {
               animation: rotate 20s linear infinite
             &.pause
               animation-play-state: paused
+          .playing-lyric
+            absolute: bottom 20px left 0 right 0
+            text-align: center
         .lyric
           size: 100%
           display: inline-block
@@ -485,6 +530,8 @@ export default {
           .line
             color: rgba(255,255,255,0.5)
             line-height: 36px
+            &.active
+              color: $color-text
       .bottom
         absolute: bottom 50px left 0 right 0
         padding: 0 10%

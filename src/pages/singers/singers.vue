@@ -10,8 +10,12 @@ import { getSingerList } from '../../api/singers';
 import { ERR_OK } from '../../api/config';
 import Listview from '../../components/listview';
 import { mapMutations } from 'vuex';
+import { playlistMixin } from '../../utils/mixins';
 
 export default {
+  mixins: [
+    playlistMixin
+  ],
   components: {
     Listview
   },
@@ -24,6 +28,11 @@ export default {
     ...mapMutations({
       setSinger: 'SET_SINGER'
     }),
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : '';
+      this.$el.style.bottom = bottom;
+      this.$refs.list.refresh();
+    },
     getSingerList() {
       getSingerList().then((res) => {
         if (res.code === ERR_OK) {

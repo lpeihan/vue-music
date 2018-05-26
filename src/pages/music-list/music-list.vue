@@ -34,8 +34,12 @@ import SongList from '../../components/song-list';
 import Scroll from '../../components/scroll';
 import loading from '../../components/loading';
 import { mapActions } from 'vuex';
+import { playlistMixin } from '../../utils/mixins';
 
 export default {
+  mixins: [
+    playlistMixin
+  ],
   components: {
     SongList,
     Scroll,
@@ -56,6 +60,11 @@ export default {
     ...mapActions([
       'selectPlay'
     ]),
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : '';
+      this.$refs.list.$el.style.bottom = bottom;
+      this.$refs.list.refresh();
+    },
     back() {
       this.$router.back();
     },

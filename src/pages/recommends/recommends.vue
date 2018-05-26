@@ -44,8 +44,12 @@ import { ERR_OK } from '../../api/config';
 import { Swiper, Slide } from 'vue-swiper-component';
 import Scroll from '../../components/scroll';
 import Loading from '../../components/loading';
+import { playlistMixin } from '../../utils/mixins';
 
 export default {
+  mixins: [
+    playlistMixin
+  ],
   data() {
     return {
       sliders: [],
@@ -60,6 +64,11 @@ export default {
     Loading
   },
   methods: {
+    handlePlaylist(playlist) {
+      const bottom = playlist.length > 0 ? '60px' : '';
+      this.$el.style.bottom = bottom;
+      this.$refs.scroll.refresh();
+    },
     getRecommends() {
       getRecommends().then((res) => {
         if (res.code === ERR_OK) {
