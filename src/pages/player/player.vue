@@ -24,7 +24,7 @@
           @touchmove="handleTouchmove"
           @touchend="handleTouchend"
         >
-          <div class="cd">
+          <div class="cd" :style="{ opacity: opacity }" :class="{ 'touching': !touching }">
             <div
               class="image"
               ref="image"
@@ -102,9 +102,7 @@
       </div>
     </div>
 
-    <audio
-      ref="audio"
-      :src="url"
+    <audio ref="audio" :src="url"
       @play="ready"
       @timeupdate="updateTime"
       @error="error"
@@ -112,14 +110,16 @@
     </audio>
   </div>
 </template>
+
 <script>
-import { mapGetters, mapMutations } from 'vuex';
 import animations from 'create-keyframe-animation';
-import { leftpad, shuffle } from '../../utils';
-import ProgressBar from '../../components/progress-bar';
-import { playMode } from '../../services/config';
 import Lyric from 'lyric-parser';
+import { mapGetters, mapMutations } from 'vuex';
+
+import ProgressBar from '../../components/progress-bar';
 import Scroll from '../../components/scroll';
+import { leftpad, shuffle } from '../../utils';
+import { playMode } from '../../services/config';
 
 export default {
   components: {
@@ -136,9 +136,9 @@ export default {
       touching: false,
       translateX: 0,
       lyricShow: false,
-      startTranslateX: 0,
       deltaX: 0,
-      url: 'http://dl.stream.qqmusic.qq.com/C400001J5QJL1pRQYB.m4a?vkey=BC9EA4501EB70B280E802A8264BF2CD8E287C0EB1F28BDAD33EF98CB9335E682E0F128396645C697D393699F061583F4A1893E93B6AD5874&guid=3446878830&uin=291630202&fromtag=66'
+      opacity: 1,
+      url: 'http://dl.stream.qqmusic.qq.com/C400003aAYrm3GE0Ac.m4a?vkey=C35503A866F9BBADBDC9DD1EC3947CBF49C80A28F7E28FA45A773204775062940BE908462B3B0DA1F66EB9E0A1217EAFACB0A13F72C99883&guid=3446878830&uin=291630202&fromtag=66'
     };
   },
   computed: {
@@ -161,23 +161,18 @@ export default {
       return this.songReady ? '' : 'disabled';
     },
     percent() {
-      // 为了解决 percent 在切换歌曲的瞬间大于 0 的 bug
-      // 在切换歌曲的瞬间，currentTime 还是上一首，但duration已经变成下一首
-      const percent = this.currentTime / this.currentSong.duration;
-      return Math.min(1, percent);
+      // 在切换歌曲的瞬间，currentTime 还是上一首，但duration已经变成下一首，percent 可能大于 1
+      return Math.min(1, this.currentTime / this.currentSong.duration);
     },
     modeClass() {
-      const mode = this.mode;
-      return mode === playMode.sequence ? 'icon-sequence' : mode === playMode.loop
+      return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop
         ? 'icon-loop' : 'icon-random';
     }
   },
   filters: {
     time(time) {
       time = time | 0;
-      const minute = time / 60 | 0;
-      const second = leftpad(time % 60);
-      return `${minute}:${second}`;
+      return `${time / 60 | 0}:${leftpad(time % 60)}`; // minite:second
     }
   },
   methods: {
@@ -280,48 +275,61 @@ export default {
     handleLyric() {},
     handleTouchstart(e) {
       this.touching = true;
+      this.deltaX = 0;
       this.startX = e.touches[0].pageX;
       this.startY = e.touches[0].pageY;
-      this.deltaX = 0;
-      this.startTranslateX = this.translateX;
     },
     handleTouchmove(e) {
       const deltaX = e.touches[0].pageX - this.startX;
       const deltaY = e.touches[0].pageY - this.startY;
 
-      if ((this.lyricShow && deltaX < 0) || (!this.lyricShow && deltaX > 0)) {
+      if ((this.lyricShow && deltaX < 0) ||
+        (!this.lyricShow && deltaX > 0) || Math.abs(deltaX) < Math.abs(deltaY)) {
         return;
       }
 
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        const translateX = Math.max(deltaX + this.startTranslateX, -window.innerWidth);
-        this.translateX = translateX;
+      let translateX = deltaX;
+
+      if (this.lyricShow) {
+        translateX = deltaX - window.innerWidth;
+      } else {
+        translateX = deltaX < -window.innerWidth ? -window.innerWidth : deltaX;
       }
 
+      const percent = Math.abs(translateX) / window.innerWidth;
+
+      this.opacity = 1 - percent;
+
+      this.translateX = translateX;
       this.deltaX = deltaX;
     },
     handleTouchend(e) {
       this.touching = false;
       const percent = Math.abs(this.deltaX) / window.innerWidth;
 
-      if (!this.lyricShow) {
-        if (percent > 0.1) {
-          this.translateX = -window.innerWidth;
-          this.lyricShow = true;
-        } else {
-          this.translateX = 0;
-        }
-      } else {
+      if (this.lyricShow) {
         if (percent > 0.1) {
           this.translateX = 0;
           this.lyricShow = false;
+          this.opacity = 1;
         } else {
           this.translateX = -window.innerWidth;
+          this.opacity = 0;
+        }
+      } else {
+        if (percent > 0.1) {
+          this.translateX = -window.innerWidth;
+          this.lyricShow = true;
+          this.opacity = 0;
+        } else {
+          this.translateX = 0;
+          this.opacity = 1;
         }
       }
     },
     enter(el, done) {
       const { x, y, scale } = this.getPosAndScale();
+      console.log(x, y);
 
       const animation = {
         0: {
@@ -456,6 +464,8 @@ export default {
           padding: 0 12%
           display: inline-block
           box-sizing: border-box
+          &.touching
+            transition: all .4s
           .image
             height: 0
             padding-bottom: 100%
