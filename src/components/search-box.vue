@@ -1,12 +1,14 @@
 <template>
   <div class="search-box">
     <i class="icon-search"></i>
-    <input type="text" class="input" :placeholder="placeholder" v-model="text">
-    <i class="icon-dismiss"></i>
+    <input type="text" class="input" :placeholder="placeholder" v-model="search">
+    <i class="icon-dismiss" @click="clear"></i>
   </div>
 </template>
 
 <script>
+import { debounce } from '../utils';
+
 export default {
   props: {
     placeholder: {
@@ -16,13 +18,21 @@ export default {
   },
   data() {
     return {
-      text: ''
+      search: ''
     };
   },
-  create() {
-    this.$watch('text', (text) => {
-      this.$emit('text', text);
-    });
+  methods: {
+    clear() {
+      this.search = '';
+    },
+    setSearch(search) {
+      this.search = search;
+    }
+  },
+  created() {
+    this.$watch('search', debounce((search) => {
+      this.$emit('search', search);
+    }, 300));
   }
 };
 </script>
